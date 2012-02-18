@@ -47,10 +47,14 @@ namespace SubSonic.Repository
         {
             _provider = provider;
             _options = options;
+            
+            AutoSetPrimaryKey = false;
+
             if (_options.Contains(SimpleRepositoryOptions.RunMigrations))
                 migrated = new List<Type>();
         }
 
+        public Boolean AutoSetPrimaryKey { get; set; }
 
         #region IRepository Members
 
@@ -191,7 +195,7 @@ namespace SubSonic.Repository
             }
 
             //for Rick :)
-            if (result != null && result != DBNull.Value) {
+            if (result != null && result != DBNull.Value && AutoSetPrimaryKey) {
                 try {
                     var tbl =  _provider.FindOrCreateTable(typeof(T));
                     var prop = item.GetType().GetProperty(tbl.PrimaryKey.Name);

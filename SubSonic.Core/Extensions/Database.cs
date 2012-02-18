@@ -157,13 +157,13 @@ namespace SubSonic.Extensions
                 string pName = rdr.GetName(i);
                 currentProp = cachedProps.SingleOrDefault(x => x.Name.Equals(pName, StringComparison.InvariantCultureIgnoreCase));
 
-				//mike if the property is null and ColumnNames has data then look in ColumnNames for match
-				if (currentProp == null && ColumnNames != null && ColumnNames.Count > i) {
-					currentProp = cachedProps.First(x => x.Name == ColumnNames[i]);
-				}
+                //mike if the property is null and ColumnNames has data then look in ColumnNames for match
+                if (currentProp == null && ColumnNames != null && ColumnNames.Count > i) {
+                    currentProp = cachedProps.First(x => x.Name == ColumnNames[i]);
+                }
                 
-				//if the property is null, likely it's a Field
-				if(currentProp == null)
+                //if the property is null, likely it's a Field
+                if(currentProp == null)
                     currentField = cachedFields.SingleOrDefault(x => x.Name.Equals(pName, StringComparison.InvariantCultureIgnoreCase));
 
                 if(currentProp != null && !DBNull.Value.Equals(rdr.GetValue(i)))
@@ -176,29 +176,60 @@ namespace SubSonic.Extensions
                     }
                     else if(currentProp.PropertyType == typeof(Guid))
                     {
-						currentProp.SetValue(item, rdr.GetGuid(i), null);
-					}
-					else if (Objects.IsNullableEnum(currentProp.PropertyType))
-					{
-						var nullEnumObjectValue = Enum.ToObject(Nullable.GetUnderlyingType(currentProp.PropertyType), rdr.GetValue(i));
-						currentProp.SetValue(item, nullEnumObjectValue, null);
-					}
+                        currentProp.SetValue(item, rdr.GetGuid(i), null);
+                    }
+                    else if (Objects.IsNullableEnum(currentProp.PropertyType))
+                    {
+                        var nullEnumObjectValue = Enum.ToObject(Nullable.GetUnderlyingType(currentProp.PropertyType), rdr.GetValue(i));
+                        currentProp.SetValue(item, nullEnumObjectValue, null);
+                    }
                     else if (currentProp.PropertyType.IsEnum)
                     {
-                        var enumValue = Enum.ToObject(currentProp.PropertyType, rdr.GetValue(i));
+                        var flags = currentProp.PropertyType.GetCustomAttributes(typeof (FlagsAttribute), false);
+                        Object enumValue;
+                        if (flags.Length > 0)
+                        {
+                            // Find the static TryParse() method.
+                            var tryParseInfo =
+                                currentProp.PropertyType.BaseType.GetMethods(BindingFlags.Static | BindingFlags.Public)[1];// currentProp.PropertyType.GetMethod("TryParse", BindingFlags.Static | BindingFlags.Public);
+                            if (tryParseInfo == null) break;
+
+                            var parseMethod = tryParseInfo.MakeGenericMethod(currentProp.PropertyType);
+                            var methodParams = new[] { rdr.GetValue(i), false, Activator.CreateInstance(currentProp.PropertyType, true) };
+                            parseMethod.Invoke(null, methodParams);
+
+                            enumValue = methodParams[2]; //Enum.TryParse<Enum>(rdr.GetValue(i), false, out enumValue);
+                        }
+                        else
+                            enumValue = Enum.ToObject(currentProp.PropertyType, rdr.GetValue(i));
+                        
                         currentProp.SetValue(item, enumValue, null);
                     }
                     else{
 
-					    var val = rdr.GetValue(i);
-					    var valType = val.GetType();
+                        var val = rdr.GetValue(i);
+                        var valType = val.GetType();
+                        var attribs =
+                                currentProp.GetCustomAttributes(
+                                        typeof (SubSonic.SqlGeneration.Schema.SubSonicTypeConversionAttribute),
+                                        true
+                                        );
                         //try to assign it
-                        if (currentProp.PropertyType.IsAssignableFrom(valueType)) {
+                        if (attribs != null && attribs.Length == 1)
+                        {   // ZJG: Use the conversion method provided via this type's metadata.
+                            var converter = (SubSonic.SqlGeneration.Schema.SubSonicTypeConversionAttribute)attribs[0];
+                            var newVal = converter.Convert(
+                                    val,
+                                    SubSonic.SqlGeneration.Schema.TypeConversionDirection.DatabaseToProperty
+                                    );
+                            currentProp.SetValue(item, newVal, null);
+                        }
+                        else if (currentProp.PropertyType.IsAssignableFrom(valueType)) {
                             currentProp.SetValue(item, val, null);
                         } else {
                             currentProp.SetValue(item, val.ChangeTypeTo(currentProp.PropertyType), null);
                         }
-					}
+                    }
                 }
                 else if(currentField != null && !DBNull.Value.Equals(rdr.GetValue(i)))
                 {
@@ -210,8 +241,8 @@ namespace SubSonic.Extensions
                     }
                     else if(currentField.FieldType == typeof(Guid))
                     {
-						currentField.SetValue(item, rdr.GetGuid(i));
-					} else if (Objects.IsNullableEnum(currentField.FieldType)) {
+                        currentField.SetValue(item, rdr.GetGuid(i));
+                    } else if (Objects.IsNullableEnum(currentField.FieldType)) {
                         var nullEnumObjectValue = Enum.ToObject(Nullable.GetUnderlyingType(currentField.FieldType), rdr.GetValue(i));
                         currentField.SetValue(item, nullEnumObjectValue);
                     } else {
@@ -236,7 +267,7 @@ namespace SubSonic.Extensions
 
         }
 
-    	/// <summary>
+        /// <summary>
         /// Loads a single primitive value type
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -310,60 +341,60 @@ namespace SubSonic.Extensions
         /// <param name="rdr"></param>
         /// <param name="columnNames"></param>
         /// <param name="onItemCreated">Invoked when a new item is created</param>
-				public static IEnumerable<T> ToEnumerable<T>(this IDataReader rdr, List<string> columnNames, Func<object, object> onItemCreated)
-				{
-					//mike added ColumnNames
-					List<T> result = new List<T>();
-					while (rdr.Read())
-					{
-						T instance = default(T);
-						var type = typeof(T);
-						if (type.Name.Contains("AnonymousType"))
-						{
+                public static IEnumerable<T> ToEnumerable<T>(this IDataReader rdr, List<string> columnNames, Func<object, object> onItemCreated)
+                {
+                    //mike added ColumnNames
+                    List<T> result = new List<T>();
+                    while (rdr.Read())
+                    {
+                        T instance = default(T);
+                        var type = typeof(T);
+                        if (type.Name.Contains("AnonymousType"))
+                        {
 
-							//this is an anon type and it has read-only fields that are set
-							//in a constructor. So - read the fields and build it
-							//http://stackoverflow.com/questions/478013/how-do-i-create-and-access-a-new-instance-of-an-anonymous-class-passed-as-a-param
-							var properties = type.GetProperties();
-							int objIdx = 0;
-							object[] objArray = new object[properties.Length];
+                            //this is an anon type and it has read-only fields that are set
+                            //in a constructor. So - read the fields and build it
+                            //http://stackoverflow.com/questions/478013/how-do-i-create-and-access-a-new-instance-of-an-anonymous-class-passed-as-a-param
+                            var properties = type.GetProperties();
+                            int objIdx = 0;
+                            object[] objArray = new object[properties.Length];
 
-							foreach (var prop in properties)
-							{
-								objArray[objIdx++] = rdr[prop.Name];
-							}
+                            foreach (var prop in properties)
+                            {
+                                objArray[objIdx++] = rdr[prop.Name];
+                            }
 
-							result.Add((T)Activator.CreateInstance(type, objArray));
-						}
-						//TODO: there has to be a better way to work with the type system
-						else if (IsCoreSystemType(type))
-						{
-							instance = (T)rdr.GetValue(0).ChangeTypeTo(type);
-							result.Add(instance);
-						}
-						else if (type.IsValueType)
-						{
-							instance = Activator.CreateInstance<T>();
-							LoadValueType(rdr, ref instance);
-							result.Add(instance);
-						}
-						else
-						{
-							instance = Activator.CreateInstance<T>();
+                            result.Add((T)Activator.CreateInstance(type, objArray));
+                        }
+                        //TODO: there has to be a better way to work with the type system
+                        else if (IsCoreSystemType(type))
+                        {
+                            instance = (T)rdr.GetValue(0).ChangeTypeTo(type);
+                            result.Add(instance);
+                        }
+                        else if (type.IsValueType)
+                        {
+                            instance = Activator.CreateInstance<T>();
+                            LoadValueType(rdr, ref instance);
+                            result.Add(instance);
+                        }
+                        else
+                        {
+                            instance = Activator.CreateInstance<T>();
 
-							if (onItemCreated != null)
-							{
-								instance = (T)onItemCreated(instance);
-							}
+                            if (onItemCreated != null)
+                            {
+                                instance = (T)onItemCreated(instance);
+                            }
 
-							//do we have a parameterless constructor?
-							Load(rdr, instance, columnNames);//mike added ColumnNames
-							result.Add(instance);
-						}
-					}
+                            //do we have a parameterless constructor?
+                            Load(rdr, instance, columnNames);//mike added ColumnNames
+                            result.Add(instance);
+                        }
+                    }
 
-					return result;
-				}
+                    return result;
+                }
 
         public static List<T> ToList<T>(this IDataReader rdr) where T : new()
         {
@@ -418,7 +449,7 @@ namespace SubSonic.Extensions
             {
                 foreach(string key in settings.Keys)
                 {
-						 IColumn col = tbl.GetColumnByPropertyName(key);
+                         IColumn col = tbl.GetColumnByPropertyName(key);
                     if(col != null)
                     {
                         if(!col.IsPrimaryKey && !col.IsReadOnly)
@@ -455,7 +486,7 @@ namespace SubSonic.Extensions
                 foreach(string key in hashed.Keys)
                 {
                     IColumn col = tbl.GetColumnByPropertyName(key);
-						  
+                          
                     if(col != null)
                     {
                         if(!col.AutoIncrement && !col.IsReadOnly && !(col.DefaultSetting != null && hashed[key] == null))

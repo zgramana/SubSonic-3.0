@@ -101,9 +101,31 @@ namespace SubSonic.Extensions
             PropertyInfo[] props = value.GetType().GetProperties();
             foreach(PropertyInfo pi in props)
             {
+                var attribs =
+                        pi.GetCustomAttributes(
+                                typeof(SubSonic.SqlGeneration.Schema.SubSonicTypeConversionAttribute),
+                                true
+                                );
+                //try to assign it
                 try
                 {
-                    result.Add(pi.Name, pi.GetValue(value, null));
+                    if (attribs != null && attribs.Length == 1)
+                    {   // ZJG: Use the conversion method provided via this type's metadata.
+                        var converter = (SubSonic.SqlGeneration.Schema.SubSonicTypeConversionAttribute)attribs[0];
+                        var oldVal = pi.GetValue(
+                                value,
+                                null
+                                );
+                        var newVal = converter.Convert(
+                                oldVal,
+                                TypeConversionDirection.PropertyToDatabase
+                                );
+                        result.Add(pi.Name, newVal);
+                    }
+                    else
+                    {
+                        result.Add(pi.Name, pi.GetValue(value, null));
+                    }
                 }
                 catch {}
             }
@@ -138,44 +160,44 @@ namespace SubSonic.Extensions
 
         private static bool CanGenerateSchemaFor(Type type)
         {
-        	return type == typeof (string) ||
-        	       type == typeof (Guid) ||
-        	       type == typeof (Guid?) ||
-        	       type == typeof (decimal) ||
-        	       type == typeof (decimal?) ||
-        	       type == typeof (double) ||
-        	       type == typeof (double?) ||
-        	       type == typeof (DateTime) ||
-        	       type == typeof (DateTime?) ||
-        	       type == typeof (bool) ||
-        	       type == typeof (bool?) ||
-        	       type == typeof (Int16) ||
-        	       type == typeof (Int16?) ||
-        	       type == typeof (Int32) ||
-        	       type == typeof (Int32?) ||
-        	       type == typeof (Int64) ||
-        	       type == typeof (Int64?) ||
-        	       type == typeof (float?) ||
-        	       type == typeof (float) ||
+            return type == typeof (string) ||
+                   type == typeof (Guid) ||
+                   type == typeof (Guid?) ||
+                   type == typeof (decimal) ||
+                   type == typeof (decimal?) ||
+                   type == typeof (double) ||
+                   type == typeof (double?) ||
+                   type == typeof (DateTime) ||
+                   type == typeof (DateTime?) ||
+                   type == typeof (bool) ||
+                   type == typeof (bool?) ||
+                   type == typeof (Int16) ||
+                   type == typeof (Int16?) ||
+                   type == typeof (Int32) ||
+                   type == typeof (Int32?) ||
+                   type == typeof (Int64) ||
+                   type == typeof (Int64?) ||
+                   type == typeof (float?) ||
+                   type == typeof (float) ||
                    type == typeof(byte[]) ||
-        	       type.IsEnum || IsNullableEnum(type);
+                   type.IsEnum || IsNullableEnum(type);
         }
 
-    	internal static bool IsNullableEnum(Type type)
-    	{
-    		var enumType = Nullable.GetUnderlyingType(type);
+        internal static bool IsNullableEnum(Type type)
+        {
+            var enumType = Nullable.GetUnderlyingType(type);
 
-			return enumType != null && enumType.IsEnum;
-    	}
+            return enumType != null && enumType.IsEnum;
+        }
 
-    	public static ITable ToSchemaTable(this Type type, IDataProvider provider)
+        public static ITable ToSchemaTable(this Type type, IDataProvider provider)
         {
             string tableName = type.Name;
             tableName = tableName.MakePlural();
             var result = new DatabaseTable(tableName, provider);
             result.ClassName = type.Name;
 
-			var typeAttributes = type.GetCustomAttributes(typeof(IClassMappingAttribute), false);
+            var typeAttributes = type.GetCustomAttributes(typeof(IClassMappingAttribute), false);
 
             foreach (IClassMappingAttribute attr in typeAttributes)
             {
@@ -194,13 +216,30 @@ namespace SubSonic.Extensions
                         continue;
                 }
 
-                if(CanGenerateSchemaFor(prop.PropertyType))
+                var attribs =
+                        prop.GetCustomAttributes(
+                                typeof(SubSonic.SqlGeneration.Schema.SubSonicTypeConversionAttribute),
+                                true
+                                );
+
+                Type propType;
+                if (attribs != null && attribs.Length == 1)
+                {   // ZJG: Use the conversion method provided via this type's metadata.
+                    var converter = (SubSonicTypeConversionAttribute) attribs[0];
+                    propType = converter.DatabaseType;
+                }
+                else
+                {
+                    propType = prop.PropertyType;
+                }
+
+                if (CanGenerateSchemaFor(propType))
                 {
                     var column = new DatabaseColumn(prop.Name, result);
-						  column.PropertyName = prop.Name;
-					bool isNullable = prop.PropertyType.Name.Contains("Nullable");
+                    column.PropertyName = prop.Name;
+                    bool isNullable = propType.Name.Contains("Nullable");
 
-                	column.DataType = IdentifyColumnDataType(prop.PropertyType, isNullable);
+                    column.DataType = IdentifyColumnDataType(propType, isNullable);
 
                     if(column.DataType == DbType.Decimal || column.DataType == DbType.Double)
                     {
@@ -311,23 +350,28 @@ namespace SubSonic.Extensions
             return false;
         }
 
-		private static DbType IdentifyColumnDataType(Type type, bool isNullable)
-    	{
-			//if this is a nullable type, we need to get at the underlying type
-			if (isNullable)
-			{
-				var nullType = Nullable.GetUnderlyingType(type);
+        private static DbType IdentifyColumnDataType(Type type, bool isNullable)
+        {
+            //if this is a nullable type, we need to get at the underlying type
+            if (isNullable)
+            {
+                var nullType = Nullable.GetUnderlyingType(type);
 
-				return nullType.IsEnum ? GetEnumType(nullType) : Database.GetDbType(nullType);
-			}
+                return nullType.IsEnum ? GetEnumType(nullType) : Database.GetDbType(nullType);
+            }
 
-			return type.IsEnum ? GetEnumType(type) : Database.GetDbType(type);
-    	}
+            return type.IsEnum ? GetEnumType(type) : Database.GetDbType(type);
+        }
 
-    	private static DbType GetEnumType(Type type)
-    	{
-			var enumType = Enum.GetUnderlyingType(type);
-    		return Database.GetDbType(enumType);
-    	}
+        private static DbType GetEnumType(Type type)
+        {
+            var attribs = type.GetCustomAttributes(typeof (FlagsAttribute), false);
+            if (attribs.Length > 0)
+            {
+                return DbType.String;
+            }
+            var enumType = Enum.GetUnderlyingType(type);
+            return Database.GetDbType(enumType);
+        }
     }
 }

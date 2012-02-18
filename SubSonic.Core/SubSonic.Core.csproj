@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SubSonic</RootNamespace>
     <AssemblyName>SubSonic.Core</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
@@ -31,6 +31,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -182,6 +183,7 @@
     <Compile Include="Schema\IDatabaseSchema.cs" />
     <Compile Include="Schema\IView.cs" />
     <Compile Include="SQLGeneration\Schema\RelationAttributes.cs" />
+    <Compile Include="SQLGeneration\Schema\TypeAttributes.cs" />
     <Compile Include="DataProviders\MySQL\MySqlGenerator.cs" />
     <Compile Include="DataProviders\SQLite\SQLiteSchema.cs" />
     <Compile Include="DataProviders\ISchemaGenerator.cs" />
