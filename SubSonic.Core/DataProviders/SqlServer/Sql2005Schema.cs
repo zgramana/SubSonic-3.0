@@ -154,6 +154,10 @@ namespace SubSonic.DataProviders.SqlServer
                     sb.Append("(" + column.NumericPrecision + ", " + column.NumberScale + ")");
             }
 
+            
+            if(column.IsCaseSensitive)
+                sb.Append(" COLLATE SQL_Latin1_General_CP1_CS_AS ");
+
             if(column.IsPrimaryKey | ! column.IsNullable)
                 sb.Append(" NOT NULL");
 

@@ -499,6 +499,34 @@ namespace SubSonic.Extensions
         }
 
         ///<summary>
+        /// Builds a SubSonic upsert query from the passed-in object.
+        ///</summary>
+        public static ISqlQuery ToUpsertQuery<T>(this T item, IDataProvider provider) where T : class, new()
+        {   // TODO.ZJG: This is not really implemented.
+            Type type = typeof(T);
+            ITable tbl = provider.FindOrCreateTable<T>();
+            Upsert query = null;
+
+            if (tbl != null)
+            {
+                var hashed = item.ToDictionary();
+                query = new Upsert(provider).Into<T>(tbl);
+                foreach (string key in hashed.Keys)
+                {
+                    IColumn col = tbl.GetColumnByPropertyName(key);
+
+                    if (col != null)
+                    {
+                        if (!col.AutoIncrement && !col.IsReadOnly && !(col.DefaultSetting != null && hashed[key] == null))
+                            query.Value(col.QualifiedName, hashed[key], col.DataType);
+                    }
+                }
+            }
+
+            return query;
+        }
+
+        ///<summary>
         /// Builds a SubSonic DELETE query from the passed-in object
         ///</summary>
         public static ISqlQuery ToDeleteQuery<T>(this T item, IDataProvider provider) where T : class, new()

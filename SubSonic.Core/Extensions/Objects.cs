@@ -116,7 +116,9 @@ namespace SubSonic.Extensions
                                 value,
                                 null
                                 );
-                        var newVal = converter.Convert(
+                        var newVal = oldVal == null
+                            ? null
+                            : converter.Convert(
                                 oldVal,
                                 TypeConversionDirection.PropertyToDatabase
                                 );

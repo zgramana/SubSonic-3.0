@@ -81,9 +81,11 @@
     <Compile Include="DataProviders\Log\ILogAdapter.cs" />
     <Compile Include="DataProviders\Log\TextWriterLogAdapter.cs" />
     <Compile Include="DataProviders\MySQL\MySqlProvider.cs" />
+    <Compile Include="DataProviders\SqlServer\Sql2008Generator.cs" />
     <Compile Include="DataProviders\SqlServer\SqlServerProvider.cs" />
     <Compile Include="DataProviders\SQLite\SQLiteProvider.cs" />
     <Compile Include="Linq\Translation\CountOrderByRemover.cs" />
+    <Compile Include="Query\Upsert.cs" />
     <Compile Include="Repository\SimpleRepositoryOptions.cs" />
     <Compile Include="Repository\SimpleRepositoryOptionsExtensions.cs" />
     <Compile Include="Schema\DatabaseRelation.cs" />

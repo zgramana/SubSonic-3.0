@@ -100,6 +100,20 @@ namespace SubSonic.SqlGeneration.Schema
     }
 
     [AttributeUsage(AttributeTargets.Property)]
+    public class SubSonicCaseSensitiveStringAttribute : Attribute, IPropertyMappingAttribute
+    {
+        public bool Accept(IColumn column)
+        {
+            return DbType.String == column.DataType;
+        }
+
+        public void Apply(IColumn column)
+        {
+            column.IsCaseSensitive = true;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
     public class SubSonicIgnoreAttribute : Attribute { }
 
     [AttributeUsage(AttributeTargets.Property)]

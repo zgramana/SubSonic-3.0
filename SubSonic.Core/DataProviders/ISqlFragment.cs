@@ -30,6 +30,9 @@ namespace SubSonic.DataProviders
         string LEFT_INNER_JOIN { get; }
         string LEFT_JOIN { get; }
         string LEFT_OUTER_JOIN { get; }
+        string LEFT_PAREN { get; }
+        string MERGE_INTO { get; }
+        string NOT { get; }
         string NOT_EQUAL_TO { get; }
         string NOT_IN { get; }
         string ON { get; }
@@ -39,12 +42,16 @@ namespace SubSonic.DataProviders
         string RIGHT_INNER_JOIN { get; }
         string RIGHT_JOIN { get; }
         string RIGHT_OUTER_JOIN { get; }
+        string RIGHT_PAREN { get; }
         string SELECT { get; }
         string SET { get; }
         string SPACE { get; }
+        string THEN { get; }
         string TOP { get; }
         string UNEQUAL_JOIN { get; }
         string UPDATE { get; }
+        string USING { get; }
+        string WHEN { get; }
         string WHERE { get; }
 
         string ClientName { get; set; }

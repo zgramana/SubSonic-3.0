@@ -23,6 +23,7 @@ namespace SubSonic.DataProviders.SQLite
     
     public class SQLiteGenerator : ANSISqlGenerator
     {
+        private const string INSERT_OR_REPLACE_INTO = "INSERT OR REPLACE INTO ";
         private const string PAGING_SQL =
             @"{0}
         {1}
@@ -141,6 +142,59 @@ namespace SubSonic.DataProviders.SQLite
             //wheres
             sb.Append(GenerateConstraints());
 
+            return sb.ToString();
+        }
+        
+        /// <summary>
+        /// Builds the insert statement.
+        /// </summary>
+        /// <returns></returns>
+        public override string BuildUpsertStatement()
+        {
+            /*
+             * Example of valid SQLite "upsert" statement:
+             * 
+             INSERT OR REPLACE INTO Employee (id,name,role) 
+              VALUES (  1, 
+                        'Susan Bar',
+                        coalesce((select role from Employee where id = 1),'Benchwarmer')
+                      );
+             */
+            StringBuilder sb = new StringBuilder();
+
+            //cast it
+            Insert i = insert;
+            sb.Append(INSERT_OR_REPLACE_INTO);
+            sb.Append(i.Table.QualifiedName);
+            sb.Append(this.sqlFragment.LEFT_PAREN);
+            sb.Append(i.SelectColumns);
+            sb.AppendLine(this.sqlFragment.RIGHT_PAREN);
+
+            //if the values list is set, use that
+            if (i.Inserts.Count > 0)
+            {
+                sb.Append(" VALUES (");
+                bool isFirst = true;
+                foreach (InsertSetting s in i.Inserts)
+                {
+                    if (!isFirst)
+                        sb.Append(",");
+                    if (!s.IsExpression)
+                        sb.Append(s.ParameterName);
+                    else
+                        sb.Append(s.Value);
+                    isFirst = false;
+                }
+                sb.AppendLine(")");
+            }
+            else
+            {
+                throw new InvalidOperationException("Need to specify Values or a Select query to insert - can't go on!");
+            }
+
+            sb.AppendLine(";");
+
+            sb.AppendFormat("SELECT last_insert_rowid();");
             return sb.ToString();
         }
     }

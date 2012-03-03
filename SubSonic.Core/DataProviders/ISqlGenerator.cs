@@ -107,6 +107,12 @@ namespace SubSonic.DataProviders
         string BuildUpdateStatement();
 
         /// <summary>
+        /// Builds the merge statement.
+        /// </summary>
+        /// <returns></returns>
+        string BuildUpsertStatement();
+
+        /// <summary>
         /// Builds the insert statement.
         /// </summary>
         /// <returns></returns>

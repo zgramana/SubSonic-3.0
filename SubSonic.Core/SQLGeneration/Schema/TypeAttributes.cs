@@ -37,20 +37,12 @@ namespace SubSonic.SqlGeneration.Schema
             {
                 case TypeConversionDirection.DatabaseToProperty:
                     {
-                        conversionMethodName = String.Concat(
-                                DatabaseType.Name,
-                                "To",
-                                PropertyType.Name
-                                );
+                        conversionMethodName = ConversionToPropertyMethodName;
                     }
                     break;
                 case TypeConversionDirection.PropertyToDatabase:
                     {
-                        conversionMethodName = String.Concat(
-                                PropertyType.Name,
-                                "To",
-                                DatabaseType.Name
-                                );
+                        conversionMethodName = ConversionToDatabaseMethodName;
                     }
                     break;
                 default:
@@ -66,11 +58,57 @@ namespace SubSonic.SqlGeneration.Schema
                     );
         }
 
+        protected string ConversionToDatabaseMethodName
+        {
+            get
+            {
+                return String.Concat(
+                        GetSafePropertyName(PropertyType),
+                        "To",
+                        GetSafePropertyName(DatabaseType)
+                        );
+            }
+        }
+
+        protected string ConversionToPropertyMethodName
+        {
+            get
+            {
+                return String.Concat(
+                        GetSafePropertyName(DatabaseType),
+                        "To",
+                        GetSafePropertyName(PropertyType)
+                        );
+            }
+        }
+
         public SubSonicTypeConversionAttribute(Type databaseType, Type propertyType, Type converterClass)
         {
             DatabaseType = databaseType;
             PropertyType = propertyType;
             ConverterClass = converterClass;
+        }
+        
+        /// <summary>
+        /// Generates a type name string that won't invalidate C#'s method naming rules because of generic types.
+        /// </summary>
+        /// <param name="propType"></param>
+        /// <returns>Given typeof(Func<IDictionary<String, String>, Tuple<string,int,bool>>), returns a string like FuncIDictionaryStringStringTupleStringInt32Boolean</returns>
+        private string GetSafePropertyName(Type propType)
+        {
+            if (!propType.IsGenericType) return propType.Name;
+
+            var nameEndIndex = propType.Name.IndexOf('`');
+            var safeName = new StringBuilder(propType.Name.Substring(0, nameEndIndex));
+
+            var genericTypeParams = propType.GetGenericArguments();
+
+            foreach (var genericType in genericTypeParams)
+            {
+                safeName.Append(GetSafePropertyName(genericType));
+            }
+
+            return safeName.ToString();
         }
     }
 

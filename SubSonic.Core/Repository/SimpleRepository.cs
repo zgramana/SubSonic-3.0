@@ -55,6 +55,7 @@ namespace SubSonic.Repository
         }
 
         public Boolean AutoSetPrimaryKey { get; set; }
+        public IDataProvider Provider { get { return _provider; } }
 
         #region IRepository Members
 
@@ -259,6 +260,46 @@ namespace SubSonic.Repository
                 result++;
             }
             batch.ExecuteTransaction();
+            return result;
+        }
+
+        /// <summary>
+        /// Updates the specified item, inserting it if not found.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="item">The item.</param>
+        /// <returns></returns>
+        public object Upsert<T>(T item) where T : class, new()
+        {
+            if (_options.Contains(SimpleRepositoryOptions.RunMigrations))
+                Migrate<T>();
+
+            object result = null;
+            using (var rdr = item.ToUpsertQuery(_provider).ExecuteReader())
+            {
+                if (rdr.Read())
+                    result = rdr[0];
+            }
+
+            //for Rick :)
+            if (result != null && result != DBNull.Value && AutoSetPrimaryKey)
+            {
+                try
+                {
+                    var tbl = _provider.FindOrCreateTable(typeof(T));
+                    var prop = item.GetType().GetProperty(tbl.PrimaryKey.Name);
+                    var settable = result.ChangeTypeTo(prop.PropertyType);
+                    prop.SetValue(item, settable, null);
+
+                    return settable;
+                }
+                catch (Exception)
+                {
+                    //swallow it - I don't like this per se but this is a convenience and we
+                    //don't want to throw the whole thing just because we can't auto-set the value
+                }
+            }
+
             return result;
         }
 

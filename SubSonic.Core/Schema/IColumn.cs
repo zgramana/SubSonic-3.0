@@ -9,6 +9,7 @@ namespace SubSonic.Schema
         DbType DataType { get; set; }
         int MaxLength { get; set; }
         bool IsNullable { get; set; }
+        bool IsCaseSensitive { get; set; }
         bool IsReadOnly { get; set; }
         bool IsComputed { get; set; }
         bool AutoIncrement { get; set; }

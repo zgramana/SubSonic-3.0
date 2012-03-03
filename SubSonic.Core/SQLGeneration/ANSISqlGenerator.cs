@@ -619,6 +619,95 @@ namespace SubSonic.SqlGeneration
 		}
 
 		/// <summary>
+		/// Builds the update statement.
+		/// </summary>
+		/// <returns></returns>
+		public virtual string BuildUpsertStatement()
+		{
+            /*
+             * Here's an example of a MERGE statement:
+             * 
+                MERGE INTO dbo.ListingPhotos AS TARGET
+	                USING (
+		                SELECT 'gafmls', 101, 0, '/uri/test', 'This is a revised caption', 1, '2012-2-26 23:40:00', '2012-2-26 23:51:00', 'd'
+	                )
+	                AS SOURCE (OrgId, PropertyID, PhotoID, Uri, Caption, IsPrimary, CreatedOn, ModifiedOn, ImageSize)
+	                ON (
+                        TARGET.Uri = SOURCE.Uri
+	                )
+                WHEN MATCHED THEN
+	                UPDATE SET Caption = SOURCE.Caption,
+			                    ModifiedOn = SOURCE.ModifiedOn
+                WHEN NOT MATCHED THEN
+	                INSERT (OrgId, PropertyID, PhotoID, Uri, Caption, IsPrimary, CreatedOn, ModifiedOn, ImageSize)
+	                VALUES (SOURCE.OrgId, SOURCE.PropertyID, SOURCE.PhotoID, SOURCE.Uri, SOURCE.Caption, SOURCE.IsPrimary, SOURCE.CreatedOn, SOURCE.ModifiedOn, SOURCE.ImageSize)
+             * 
+             */
+
+			StringBuilder sb = new StringBuilder();
+
+			//cast it
+
+            sb.Append(this.sqlFragment.MERGE_INTO);
+			sb.Append(query.FromTables[0].QualifiedName);
+		    sb.Append(this.sqlFragment.AS);
+		    sb.Append("TARGET");
+		    sb.Append(this.sqlFragment.USING);
+		    sb.Append(this.sqlFragment.LEFT_PAREN);
+		    sb.Append(BuildSelectStatement());
+		    sb.Append(this.sqlFragment.RIGHT_PAREN);
+		    sb.Append(this.sqlFragment.AS);
+		    sb.Append("SOURCE");
+		    sb.Append(this.sqlFragment.LEFT_PAREN);
+            // List column names, comma-delimited.
+			for (int i = 0; i < query.SetStatements.Count; i++)
+			{
+				sb.Append(query.SetStatements[i].ColumnName);
+
+                if (i < query.SetStatements.Count - 1)
+                {
+                    sb.AppendLine(", ");
+                }
+			}
+            sb.Append(this.sqlFragment.RIGHT_PAREN);
+		    sb.Append(this.sqlFragment.ON);
+		    sb.Append(this.sqlFragment.LEFT_PAREN);
+		    sb.Append(this.query.Constraints);
+            sb.Append(this.sqlFragment.RIGHT_PAREN);
+
+
+
+
+            // On matched, do an update.
+		    for (int i = 0; i < query.SetStatements.Count; i++)
+			{
+				if (i == 0)
+				{
+					sb.AppendLine(" ");
+					sb.Append(this.sqlFragment.SET);
+				}
+				else
+					sb.AppendLine(", ");
+
+				sb.Append(query.SetStatements[i].ColumnName);
+
+				sb.Append("=");
+
+				if (!query.SetStatements[i].IsExpression)
+					sb.Append(query.SetStatements[i].ParameterName);
+				else
+					sb.Append(query.SetStatements[i].Value.ToString());
+			}
+
+
+
+			//wheres
+			sb.Append(GenerateConstraints());
+
+			return sb.ToString();
+		}
+
+		/// <summary>
 		/// Builds the insert statement.
 		/// </summary>
 		/// <returns></returns>

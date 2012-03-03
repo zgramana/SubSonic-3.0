@@ -71,8 +71,17 @@ namespace SubSonic.SqlGeneration
         private string _left_outer_join = " LEFT OUTER JOIN ";
         public string LEFT_OUTER_JOIN { get { return _left_outer_join; } set { _left_outer_join = value; } }
 
+        private string _left_paren = " ( ";
+        public string LEFT_PAREN { get { return _left_paren; } set { _left_paren = value; } }
+
+        private string _merge_into = "MERGE INTO ";
+        public string MERGE_INTO { get { return _merge_into; } set { _merge_into = value; } }
+
         private string _not_equal_to = " <> ";
         public string NOT_EQUAL_TO { get { return _not_equal_to; } set { _not_equal_to = value; } }
+
+        private string _not = " NOT ";
+        public string NOT { get { return _not; } set { _not = value; } }
 
         private string _not_in = " NOT IN ";
         public string NOT_IN { get { return _not_in; } set { _not_in = value; } }
@@ -98,6 +107,9 @@ namespace SubSonic.SqlGeneration
         private string _right_outer_join = " RIGHT OUTER JOIN ";
         public string RIGHT_OUTER_JOIN { get { return _right_outer_join; } set { _right_outer_join = value; } }
 
+        private string _right_paren = " ) ";
+        public string RIGHT_PAREN { get { return _right_paren; } set { _right_paren = value; } }
+
         private string _select = "SELECT ";
         public string SELECT { get { return _select; } set { _select = value; } }
 
@@ -107,6 +119,9 @@ namespace SubSonic.SqlGeneration
         private string _space = " ";
         public string SPACE { get { return _space; } set { _space = value; } }
 
+        private string _then = " THEN ";
+        public string THEN { get { return _then; } set { _then = value; } }
+
         private string _top = "TOP ";
         public string TOP { get { return _top; } set { _top = value; } }
 
@@ -115,6 +130,12 @@ namespace SubSonic.SqlGeneration
 
         private string _update = "UPDATE ";
         public string UPDATE { get { return _update; } set { _update = value; } }
+
+        private string _using = " USING ";
+        public string USING { get { return _using; } set { _using = value; } }
+
+        private string _when = " WHEN ";
+        public string WHEN { get { return _when; } set { _when = value; } }
 
         private string _where = " WHERE ";
         public string WHERE { get { return _where; } set { _where = value; } }

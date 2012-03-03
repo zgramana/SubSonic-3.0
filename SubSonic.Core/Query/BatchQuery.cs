@@ -194,7 +194,11 @@ namespace SubSonic.Query
                         }
                     }
                     trans.Commit();
-                    scope.Connection.Dispose();
+
+                    // Only dispose connection if it's not shared.
+                    if (!scope.IsUsingSharedConnection)
+                        scope.Connection.Dispose();
+
                     _fixedCommands.Clear();
                 }
             }
