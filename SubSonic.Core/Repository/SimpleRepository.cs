@@ -62,7 +62,11 @@ namespace SubSonic.Repository
 
         public bool Exists<T>(Expression<Func<T, bool>> expression) where T : class, new()
         {
-            return All<T>().Any(expression);
+            if (_options.Contains(SimpleRepositoryOptions.RunMigrations))
+                Migrate<T>();
+
+            var qry = new Query<T>(_provider);
+            return qry.Any(expression);
         }
 
         public IQueryable<T> All<T>() where T : class, new()
@@ -70,8 +74,10 @@ namespace SubSonic.Repository
             if (_options.Contains(SimpleRepositoryOptions.RunMigrations))
                 Migrate<T>();
 
-            var qry = new Query<T>(_provider);
-            return qry;
+            var tbl = _provider.FindOrCreateTable<T>();
+
+            var qry = new Select(_provider).From(tbl);
+            return qry.ExecuteTypedList<T>().AsQueryable();
         }
 
 
