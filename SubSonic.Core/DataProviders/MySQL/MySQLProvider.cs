@@ -13,6 +13,9 @@ namespace SubSonic.DataProviders.MySQL
 {
     class MySqlProvider : DbDataProvider
     {
+        [ThreadStatic]
+        protected static new DbConnection __sharedConnection;
+
         public override string InsertionIdentityFetchString { get { return String.Empty; } }
 
         public MySqlProvider(string connectionString, string providerName) : base(connectionString, providerName)
@@ -43,5 +46,32 @@ namespace SubSonic.DataProviders.MySQL
         }
 
         public override IQueryLanguage QueryLanguage { get { return new MySqlLanguage(this); } }
+        /// <summary>
+        /// Gets or sets the current shared connection.
+        /// </summary>
+        /// <value>The current shared connection.</value>
+        public override DbConnection CurrentSharedConnection
+        {
+            get { return __sharedConnection; }
+
+            protected set
+            {
+                if (value == null)
+                {
+                    __sharedConnection.Dispose();
+                    __sharedConnection = null;
+                }
+                else
+                {
+                    __sharedConnection = value;
+                    __sharedConnection.Disposed += __sharedConnection_Disposed;
+                }
+            }
+        }
+
+        protected static void __sharedConnection_Disposed(object sender, EventArgs e)
+        {
+            __sharedConnection = null;
+        }
     }
 }

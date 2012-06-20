@@ -32,8 +32,8 @@ namespace SubSonic.DataProviders
 {
     public abstract class DbDataProvider : IDataProvider
     {
-        [ThreadStatic]
-        private static DbConnection __sharedConnection;
+        //[ThreadStatic]
+        //protected static DbConnection __sharedConnection;
 
         private ILogAdapter _logger;
 
@@ -273,24 +273,24 @@ namespace SubSonic.DataProviders
         /// Gets or sets the current shared connection.
         /// </summary>
         /// <value>The current shared connection.</value>
-        public DbConnection CurrentSharedConnection
-        {
-            get { return __sharedConnection; }
+        public abstract DbConnection CurrentSharedConnection { get; protected set; }
+        //{
+        //    get { return __sharedConnection; }
 
-            protected set
-            {
-                if(value == null)
-                {
-                    __sharedConnection.Dispose();
-                    __sharedConnection = null;
-                }
-                else
-                {
-                    __sharedConnection = value;
-                    __sharedConnection.Disposed += __sharedConnection_Disposed;
-                }
-            }
-        }
+        //    protected set
+        //    {
+        //        if(value == null)
+        //        {
+        //            __sharedConnection.Dispose();
+        //            __sharedConnection = null;
+        //        }
+        //        else
+        //        {
+        //            __sharedConnection = value;
+        //            __sharedConnection.Disposed += __sharedConnection_Disposed;
+        //        }
+        //    }
+        //}
 
         /// <summary>
         /// Initializes the shared connection.
@@ -454,11 +454,6 @@ namespace SubSonic.DataProviders
                     cmd.Parameters.Add(p);
                 }
             }
-        }
-
-        private static void __sharedConnection_Disposed(object sender, EventArgs e)
-        {
-            __sharedConnection = null;
         }
 
         public DbConnection CreateConnection(string connectionString)
